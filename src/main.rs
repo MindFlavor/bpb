@@ -41,15 +41,16 @@ fn main() {
 
     // create the struct
     output.push_str(&format!(
-        "pub struct {}{} {{",
+        "pub struct {}{} {{\n",
         stc.name,
         calculate_type_description(&stc)
     ));
 
     for f in &stc.fields {
-        //output.push_str(&format!("\tpub {}: {}"
-    
+       output.push_str(&format!("\t{}: {},\n", f.name, calculate_type(f)));    
     }
+
+    output.push_str("}\n\n");
 
     println!("{:?}", stc);
     println!("\n{}", output);
