@@ -64,8 +64,8 @@ fn main() {
         output.push_str(&format!(
             "pub struct {}{}\n{} {{\n",
             stc.name,
-            calculate_type_description(&stc, &[]),
-            calculate_where(&stc)
+            calculate_type_description(&stc, &[], false),
+            calculate_where(&stc, &[])
         ));
 
         // constructor types
@@ -93,7 +93,7 @@ fn main() {
     {
         output.push_str(&format!(
             "impl{} for {}{} {{\n",
-            calculate_type_description(&stc, &all_builder_types),
+            calculate_type_description(&stc, &all_builder_types, false),
             stc.name,
             calculate_type_description_all_no(&stc)
         ));
@@ -138,13 +138,13 @@ fn main() {
             let t = ct.trait_get.clone().unwrap();
             output.push_str(&format!(
                 "impl{} {} for {}{}\n",
-                calculate_type_description(&stc, &[]),
+                calculate_type_description(&stc, &[], false),
                 t,
                 stc.name,
-                calculate_type_description(&stc, &[]),
+                calculate_type_description(&stc, &[], false),
             ));
 
-            output.push_str(&format!("{}{{\n", &calculate_where(&stc)));
+            output.push_str(&format!("{}{{\n", &calculate_where(&stc, &[])));
             output.push_str(&format!(
                 "\tfn {}(&self) -> {} {{\n\t\tself.{}\n\t}}\n\n",
                 ct.name, ct.field_type, ct.name
@@ -159,7 +159,7 @@ fn main() {
             .iter()
             .filter(|ct| ct.trait_get.is_none())
         {
-            regardless.push_str(&format!("{}{{\n", &calculate_where(&stc)));
+            regardless.push_str(&format!("{}{{\n", &calculate_where(&stc, &[])));
             regardless.push_str(&format!(
                 "\tfn {}(&self) -> {} {{\n\t\tself.{}\n\t}}\n\n",
                 ct.name, ct.field_type, ct.name
@@ -169,21 +169,51 @@ fn main() {
 
     // get traits methods
     {
-        for tm in stc
-            .fields
-            .iter()
-            .filter(|tm| !tm.optional)
-            .filter(|tm| tm.trait_get.is_some())
-        {
-            let bt = tm.builder_type.clone().unwrap();
+        for tm in stc.fields.iter().filter(|tm| tm.trait_get.is_some()) {
+            let bt = match tm.clone().builder_type {
+                Some(bt) => vec![bt],
+                None => Vec::new(),
+            };
             let tg = tm.trait_get.clone().unwrap();
 
             output.push_str(&format!(
                 "impl{} {} for {}{}\n",
-                calculate_type_description(&stc, &[bt.clone()]),
+                calculate_type_description(&stc, &bt[..], false),
                 tg,
                 stc.name,
-                calculate_type_description(&stc, &[bt.clone()]),
+                calculate_type_description(&stc, &bt[..], true),
+            ));
+
+            output.push_str(&format!("{}\n{{\n", calculate_where(&stc, &bt[..])));
+
+            output.push_str(&format!(
+                "\tfn {}(&self) -> {} {{\n",
+                tm.name, tm.field_type
+            ));
+
+            output.push_str(&format!("\t\tself.{}", tm.name));
+            if !tm.optional && tm.initializer.is_none() {
+                output.push_str(".unwrap()\n\t}\n}\n\n");
+            } else {
+                output.push_str("\n\t}\n}\n\n");
+            }
+        }
+    }
+
+    // set trait methods
+    {
+        for tm in stc.fields.iter().filter(|tm| tm.trait_get.is_some()) {
+            let bt = match tm.clone().builder_type {
+                Some(bt) => vec![bt],
+                None => Vec::new(),
+            };
+            let tg = tm.trait_get.clone().unwrap();
+
+            let full_type_desc = calculate_type_description(&stc, &[], false);
+
+            output.push_str(&format!(
+                "impl{} {} for {}{}\n",
+                full_type_desc, tg, stc.name, full_type_desc
             ));
         }
     }
@@ -193,9 +223,9 @@ fn main() {
         output.push_str("// methods callable regardless\n");
         output.push_str(&format!(
             "impl{} for {}{}\n{{\n",
-            calculate_type_description(&stc, &[]),
+            calculate_type_description(&stc, &[], false),
             stc.name,
-            calculate_type_description(&stc, &[])
+            calculate_type_description(&stc, &[], false)
         ));
         output.push_str(&format!("{}\n", &regardless));
         output.push_str("}\n");
@@ -259,7 +289,11 @@ fn calculate_type_description_all_no(stc: &Struct) -> String {
     }
 }
 
-fn calculate_type_description(stc: &Struct, builders_type_to_skip: &[String]) -> String {
+fn calculate_type_description(
+    stc: &Struct,
+    builders_type_to_skip: &[String],
+    f_replace_with_yes: bool,
+) -> String {
     let mut s = String::new();
 
     let mut f_first = true;
@@ -272,25 +306,30 @@ fn calculate_type_description(stc: &Struct, builders_type_to_skip: &[String]) ->
         f_first = false;
     }
 
-    for f in stc
-        .fields
-        .iter()
-        .filter(|f| f.optional == false)
-        .filter(|f| {
-            let bt = f.builder_type.clone().unwrap();
-            !builders_type_to_skip.contains(&bt)
-        }) {
-        if !f_first {
-            s.push_str(", ");
+    for f in stc.fields.iter().filter(|f| f.optional == false) {
+        let bt = f.builder_type.clone().unwrap();
+        if builders_type_to_skip.contains(&bt) {
+            if f_replace_with_yes {
+                if !f_first {
+                    s.push_str(", ");
+                }
+
+                s.push_str("Yes");
+                f_first = false;
+            }
+        } else {
+            if !f_first {
+                s.push_str(", ");
+            }
+
+            let bt = match f.builder_type {
+                Some(ref a) => a,
+                None => panic!(),
+            };
+
+            s.push_str(&bt);
+            f_first = false;
         }
-
-        let bt = match f.builder_type {
-            Some(ref a) => a,
-            None => panic!(),
-        };
-
-        s.push_str(&bt);
-        f_first = false;
     }
 
     if s.is_empty() {
@@ -300,10 +339,13 @@ fn calculate_type_description(stc: &Struct, builders_type_to_skip: &[String]) ->
     }
 }
 
-fn calculate_where(stc: &Struct) -> String {
+fn calculate_where(stc: &Struct, builders_type_to_skip: &[String]) -> String {
     let mut s = String::new();
 
-    for f in stc.fields.iter().filter(|f| !f.optional) {
+    for f in stc.fields.iter().filter(|f| !f.optional).filter(|f| {
+        let bt = f.builder_type.clone().unwrap();
+        !builders_type_to_skip.contains(&bt)
+    }) {
         s.push_str(&format!(
             "\t{} : ToAssign,\n",
             f.clone().builder_type.unwrap()

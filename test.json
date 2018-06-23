@@ -35,6 +35,11 @@
 			"initializer": "0",
 			"trait_get": "NumberOfThingsRequired",
 			"trait_set": "NumberOfThingsSupport"
+		},
+		{
+			"name": "optional_no_trait",
+			"field_type": "&'a str",
+			"optional": true
 		}
 	]
 }
