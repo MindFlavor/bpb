@@ -5,7 +5,10 @@
 		{
 			"name": "client",
 			"field_type": "&'a Client",
-			"trait_get": "ClientRequired"
+			"trait_get": "ClientRequired<'a>"
+		},
+		{	"name": "constro",
+			"field_type": "&'a u64"
 		}
 	],
 	"fields": [
@@ -30,8 +33,8 @@
 			"builder_type": "NumberOfThingsSet",			
 			"optional": false,
 			"initializer": "0",
-			"trait_get": "ContainerNameRequired",
-			"trait_set": "ContainerNameSupport"
+			"trait_get": "NumberOfThingsRequired",
+			"trait_set": "NumberOfThingsSupport"
 		}
 	]
 }

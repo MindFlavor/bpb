@@ -57,6 +57,8 @@ fn main() {
 
     let mut output = String::new();
 
+    let mut regardless = String::new();
+
     // create the struct
     {
         output.push_str(&format!(
@@ -122,7 +124,81 @@ fn main() {
             output.push_str(&format!("\t\t\t{}: None\n", f.name));
         }
 
-        output.push_str("\t\t}\n\t}\n}\n");
+        output.push_str("\t\t}\n\t}\n}\n\n");
+    }
+
+    // constructor types getter
+    {
+        // first the one with trait
+        for ct in stc
+            .constructor_fields
+            .iter()
+            .filter(|ct| ct.trait_get.is_some())
+        {
+            let t = ct.trait_get.clone().unwrap();
+            output.push_str(&format!(
+                "impl{} {} for {}{}\n",
+                calculate_type_description(&stc, &[]),
+                t,
+                stc.name,
+                calculate_type_description(&stc, &[]),
+            ));
+
+            output.push_str(&format!("{}{{\n", &calculate_where(&stc)));
+            output.push_str(&format!(
+                "\tfn {}(&self) -> {} {{\n\t\tself.{}\n\t}}\n\n",
+                ct.name, ct.field_type, ct.name
+            ));
+
+            output.push_str("}\n\n");
+        }
+
+        // now the ones without trait
+        for ct in stc
+            .constructor_fields
+            .iter()
+            .filter(|ct| ct.trait_get.is_none())
+        {
+            regardless.push_str(&format!("{}{{\n", &calculate_where(&stc)));
+            regardless.push_str(&format!(
+                "\tfn {}(&self) -> {} {{\n\t\tself.{}\n\t}}\n\n",
+                ct.name, ct.field_type, ct.name
+            ));
+        }
+    }
+
+    // get traits methods
+    {
+        for tm in stc
+            .fields
+            .iter()
+            .filter(|tm| !tm.optional)
+            .filter(|tm| tm.trait_get.is_some())
+        {
+            let bt = tm.builder_type.clone().unwrap();
+            let tg = tm.trait_get.clone().unwrap();
+
+            output.push_str(&format!(
+                "impl{} {} for {}{}\n",
+                calculate_type_description(&stc, &[bt.clone()]),
+                tg,
+                stc.name,
+                calculate_type_description(&stc, &[bt.clone()]),
+            ));
+        }
+    }
+
+    // print regardless
+    {
+        output.push_str("// methods callable regardless\n");
+        output.push_str(&format!(
+            "impl{} for {}{}\n{{\n",
+            calculate_type_description(&stc, &[]),
+            stc.name,
+            calculate_type_description(&stc, &[])
+        ));
+        output.push_str(&format!("{}\n", &regardless));
+        output.push_str("}\n");
     }
 
     println!("{:?}", stc);
