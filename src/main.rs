@@ -207,7 +207,7 @@ fn main() {
                 Some(bt) => vec![bt],
                 None => Vec::new(),
             };
-            let tg = tm.trait_get.clone().unwrap();
+            let tg = tm.trait_set.clone().unwrap();
 
             let full_type_desc = calculate_type_description(&stc, &[], false);
 
@@ -215,6 +215,21 @@ fn main() {
                 "impl{} {} for {}{}\n",
                 full_type_desc, tg, stc.name, full_type_desc
             ));
+            output.push_str(&format!("{}\n{{\n", calculate_where(&stc, &[])));
+
+            output.push_str(&format!(
+                "\ttype O = {}{};\n\n",
+                stc.name,
+                calculate_type_description(&stc, &bt[..], true)
+            ));
+
+            output.push_str(&format!(
+                "\tfn with_{}(self, {}: {}) -> Self::O {{\n",
+                tm.name, tm.name, tm.field_type
+            ));
+
+            output.push_str("\t\t<Constructor!>\n");
+            output.push_str("\t}\n}\n\n");
         }
     }
 

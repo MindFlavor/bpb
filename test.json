@@ -24,8 +24,8 @@
 			"name": "client_request_id",
 			"field_type": "&'a str",
 			"optional": true,
-			"trait_get": "ClientRequestIdOptional",
-			"trait_set": "ClientRequestIdSupport"
+			"trait_get": "ClientRequestIdOption<'a>",
+			"trait_set": "ClientRequestIdSupport<'a>"
 		},
 		{
 			"name": "number_of_things",
