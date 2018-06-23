@@ -37,32 +37,75 @@ fn main() {
         serde_json::from_str(&contents).unwrap()
     };
 
+    let all_builder_types = {
+        let mut abt = Vec::new();
+        stc.fields
+            .iter()
+            .filter(|f| !f.optional)
+            .map(|bt| abt.push(bt.builder_type.clone().unwrap()))
+            .collect::<()>();
+        abt
+    };
+
     let mut output = String::new();
 
     // create the struct
-    output.push_str(&format!(
-        "pub struct {}{}\n{} {{",
-        stc.name,
-        calculate_type_description(&stc),
-        calculate_where(&stc)
-    ));
+    {
+        output.push_str(&format!(
+            "pub struct {}{}\n{} {{",
+            stc.name,
+            calculate_type_description(&stc, &[]),
+            calculate_where(&stc)
+        ));
 
+        // phantom types
+        for f in stc.fields.iter().filter(|f| !f.optional) {
+            output.push_str(&format!(
+                "\tp_{}: PhantomData<{}>,\n",
+                f.name,
+                f.clone().builder_type.unwrap()
+            ));
+        }
 
+        for f in &stc.fields {
+            output.push_str(&format!("\t{}: {},\n", f.name, calculate_type(f)));
+        }
 
-    // phantom types
-    for f in stc.fields.iter().filter(|f| !f.optional) {
-       output.push_str(&format!("\tp_{}: PhantomData<{}>,\n", f.name, f.clone().builder_type.unwrap()));    
+        output.push_str("}\n\n");
     }
-
-    for f in &stc.fields {
-       output.push_str(&format!("\t{}: {},\n", f.name, calculate_type(f)));    
-    }
-
-    output.push_str("}\n\n");
-    
 
     // create the ctor
-   //output.push_str(&format!("impl 
+    {
+        output.push_str(&format!(
+            "impl{} for {}{} {{\n",
+            calculate_type_description(&stc, &all_builder_types),
+            stc.name,
+            calculate_type_description_all_no(&stc)
+        ));
+
+        output.push_str(&format!(
+            "\t pub(crate) fn new() -> {}{} {{\n\t\t{} {{\n",
+            stc.name,
+            calculate_type_description_all_no(&stc),
+            stc.name
+        ));
+
+        for f in stc.fields.iter().filter(|f| !f.optional) {
+            output.push_str(&format!("\t\t\tp_{}: PhantomData {{}},\n", f.name));
+            match f.initializer {
+                Some(ref initializer) => {
+                    output.push_str(&format!("\t\t\t{}: {},\n", f.name, initializer))
+                }
+                None => output.push_str(&format!("\t\t\t{}: None,\n", f.name)),
+            };
+        }
+
+        for f in stc.fields.iter().filter(|f| f.optional) {
+            output.push_str(&format!("\t\t\t{}: None\n", f.name));
+        }
+
+        output.push_str("\t\t}\n\t}\n}\n");
+    }
 
     println!("{:?}", stc);
     println!("\n{}", output);
@@ -75,26 +118,61 @@ fn calculate_type(f: &Field) -> String {
 
     // not optional
     match f.initializer {
-        Some(ref c) => f.field_type.to_owned(),
-        None => format!("Option<{}>", f.field_type)
+        Some(_) => f.field_type.to_owned(),
+        None => format!("Option<{}>", f.field_type),
     }
 }
 
-fn calculate_type_description(stc: &Struct) -> String {
+fn calculate_type_description_all_no(stc: &Struct) -> String {
     let mut s = String::new();
 
-    let mut fFirst = true;
+    let mut f_first = true;
     for f in &stc.extra_types {
-        if !fFirst {
+        if !f_first {
             s.push_str(", ");
         }
 
         s.push_str(&f);
-        fFirst = false;
+        f_first = false;
     }
 
-    for f in stc.fields.iter().filter(|f| f.optional == false) {
-        if !fFirst {
+    for _ in stc.fields.iter().filter(|f| f.optional == false) {
+        if !f_first {
+            s.push_str(", No");
+        }
+
+        f_first = false;
+    }
+
+    if s.is_empty() {
+        "".to_owned()
+    } else {
+        format!("<{}>", s)
+    }
+}
+
+fn calculate_type_description(stc: &Struct, builders_type_to_skip: &[String]) -> String {
+    let mut s = String::new();
+
+    let mut f_first = true;
+    for f in &stc.extra_types {
+        if !f_first {
+            s.push_str(", ");
+        }
+
+        s.push_str(&f);
+        f_first = false;
+    }
+
+    for f in stc
+        .fields
+        .iter()
+        .filter(|f| f.optional == false)
+        .filter(|f| {
+            let bt = f.builder_type.clone().unwrap();
+            !builders_type_to_skip.contains(&bt)
+        }) {
+        if !f_first {
             s.push_str(", ");
         }
 
@@ -104,7 +182,7 @@ fn calculate_type_description(stc: &Struct) -> String {
         };
 
         s.push_str(&bt);
-        fFirst = false;
+        f_first = false;
     }
 
     if s.is_empty() {
@@ -116,13 +194,16 @@ fn calculate_type_description(stc: &Struct) -> String {
 
 fn calculate_where(stc: &Struct) -> String {
     let mut s = String::new();
-    
+
     for f in stc.fields.iter().filter(|f| !f.optional) {
-        s.push_str(&format!("\t{} : ToAssign,\n", f.clone().builder_type.unwrap()));
+        s.push_str(&format!(
+            "\t{} : ToAssign,\n",
+            f.clone().builder_type.unwrap()
+        ));
     }
 
     if s.is_empty() {
-        "".to_owned() 
+        "".to_owned()
     } else {
         format!("where\n{}", s)
     }
