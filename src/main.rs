@@ -41,16 +41,28 @@ fn main() {
 
     // create the struct
     output.push_str(&format!(
-        "pub struct {}{} {{\n",
+        "pub struct {}{}\n{} {{",
         stc.name,
-        calculate_type_description(&stc)
+        calculate_type_description(&stc),
+        calculate_where(&stc)
     ));
+
+
+
+    // phantom types
+    for f in stc.fields.iter().filter(|f| !f.optional) {
+       output.push_str(&format!("\tp_{}: PhantomData<{}>,\n", f.name, f.clone().builder_type.unwrap()));    
+    }
 
     for f in &stc.fields {
        output.push_str(&format!("\t{}: {},\n", f.name, calculate_type(f)));    
     }
 
     output.push_str("}\n\n");
+    
+
+    // create the ctor
+   //output.push_str(&format!("impl 
 
     println!("{:?}", stc);
     println!("\n{}", output);
@@ -99,5 +111,19 @@ fn calculate_type_description(stc: &Struct) -> String {
         "".to_owned()
     } else {
         format!("<{}>", s)
+    }
+}
+
+fn calculate_where(stc: &Struct) -> String {
+    let mut s = String::new();
+    
+    for f in stc.fields.iter().filter(|f| !f.optional) {
+        s.push_str(&format!("\t{} : ToAssign,\n", f.clone().builder_type.unwrap()));
+    }
+
+    if s.is_empty() {
+        "".to_owned() 
+    } else {
+        format!("where\n{}", s)
     }
 }
