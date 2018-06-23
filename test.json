@@ -1,0 +1,30 @@
+{
+	"name": "SaratogaBuilder",
+	"extra_types": [ "'a" ],
+	"fields": [
+		{
+			"name": "container_name",
+			"field_type": "String",
+			"builder_type": "ContainerNameSet",
+			"optional": false,
+			"trait_get": "ContainerNameRequired",
+			"trait_set": "ContainerNameSupport"
+		},
+		{
+			"name": "client_request_id",
+			"field_type": "&'a str",
+			"optional": true,
+			"trait_get": "ClientRequestIdOptional",
+			"trait_set": "ClientRequestIdSupport"
+		},
+		{
+			"name": "number_of_things",
+			"field_type": "u8",
+			"builder_type": "NumberOfThingsSet",			
+			"optional": false,
+			"initializer": "0",
+			"trait_get": "ContainerNameRequired",
+			"trait_set": "ContainerNameSupport"
+		}
+	]
+}
