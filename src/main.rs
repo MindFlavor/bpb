@@ -244,12 +244,72 @@ fn main() {
                 ));
             }
 
-            // TODO
             for f in &stc.fields {
-                output.push_str(&format!("\t{}: {},\n", f.name, calculate_type(f)));
+                if f.name == tm.name {
+                    output.push_str(&format!("\t\t\t\t{},\n", f.name));
+                } else {
+                    output.push_str(&format!("\t\t\t\t{}: self.{},\n", f.name, f.name));
+                }
             }
 
-            output.push_str("\t}\n}\n\n");
+            output.push_str("\t\t}\n}\n\n");
+        }
+    }
+
+    // get optional without traits
+    {
+        for tm in stc
+            .fields
+            .iter()
+            .filter(|tm| tm.optional && tm.trait_get.is_none())
+        {
+            regardless.push_str(&format!(
+                "\tpub fn {}(&self) -> Option<{}> {{\n",
+                tm.name, tm.field_type
+            ));
+
+            regardless.push_str(&format!("\t\tself.{}", tm.name));
+            regardless.push_str("\n\t}\n}\n\n");
+        }
+    }
+
+    // set optional without traits
+    {
+        for tm in stc
+            .fields
+            .iter()
+            .filter(|tm| tm.optional && tm.trait_get.is_none())
+        {
+            regardless.push_str(&format!(
+                "\tfn with_{}(self, {}: {}) -> Self {{\n",
+                tm.name, tm.name, tm.field_type
+            ));
+
+            regardless.push_str(&format!("\t\t{} {{\n", stc.name));
+
+            // constructor types
+            for t in stc.constructor_fields.iter() {
+                regardless.push_str(&format!("\t\t\t\t{}: self.{},\n", t.name, t.name));
+            }
+
+            // phantom types
+            for f in stc.fields.iter().filter(|f| !f.optional) {
+                regardless.push_str(&format!(
+                    "\t\t\t\tp_{}: PhantomData<{}>,\n",
+                    f.name,
+                    f.clone().builder_type.unwrap()
+                ));
+            }
+
+            for f in &stc.fields {
+                if f.name == tm.name {
+                    regardless.push_str(&format!("\t\t\t\t{},\n", f.name));
+                } else {
+                    regardless.push_str(&format!("\t\t\t\t{}: self.{},\n", f.name, f.name));
+                }
+            }
+
+            regardless.push_str("\t\t}\n}\n\n");
         }
     }
 
