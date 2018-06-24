@@ -228,7 +228,27 @@ fn main() {
                 tm.name, tm.name, tm.field_type
             ));
 
-            output.push_str("\t\t<Constructor!>\n");
+            output.push_str(&format!("\t\t{} {{\n", stc.name));
+
+            // constructor types
+            for t in stc.constructor_fields.iter() {
+                output.push_str(&format!("\t\t\t\t{}: self.{},\n", t.name, t.name));
+            }
+
+            // phantom types
+            for f in stc.fields.iter().filter(|f| !f.optional) {
+                output.push_str(&format!(
+                    "\t\t\t\tp_{}: PhantomData<{}>,\n",
+                    f.name,
+                    f.clone().builder_type.unwrap()
+                ));
+            }
+
+            // TODO
+            for f in &stc.fields {
+                output.push_str(&format!("\t{}: {},\n", f.name, calculate_type(f)));
+            }
+
             output.push_str("\t}\n}\n\n");
         }
     }
