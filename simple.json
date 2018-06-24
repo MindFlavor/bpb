@@ -1,0 +1,21 @@
+{
+	"name": "SaratogaBuilder",
+	"extra_types": [ "'a" ],
+	"constructor_fields": [
+		{
+			"name": "client",
+			"field_type": "&'a Client",
+			"trait_get": "ClientRequired<'a>"
+		}
+	],
+	"fields": [
+		{
+			"name": "container_name",
+			"field_type": "String",
+			"builder_type": "ContainerNameSet",
+			"optional": false,
+			"trait_get": "ContainerNameRequired",
+			"trait_set": "ContainerNameSupport"
+		}	
+	]
+}

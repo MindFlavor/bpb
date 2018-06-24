@@ -92,7 +92,7 @@ fn main() {
     // create the ctor
     {
         output.push_str(&format!(
-            "impl{} for {}{} {{\n",
+            "impl{} {}{} {{\n",
             calculate_type_description(&stc, &all_builder_types, false),
             stc.name,
             calculate_type_description_all_no(&stc)
@@ -121,7 +121,7 @@ fn main() {
         }
 
         for f in stc.fields.iter().filter(|f| f.optional) {
-            output.push_str(&format!("\t\t\t{}: None\n", f.name));
+            output.push_str(&format!("\t\t\t{}: None,\n", f.name));
         }
 
         output.push_str("\t\t}\n\t}\n}\n\n");
@@ -237,11 +237,7 @@ fn main() {
 
             // phantom types
             for f in stc.fields.iter().filter(|f| !f.optional) {
-                output.push_str(&format!(
-                    "\t\t\t\tp_{}: PhantomData<{}>,\n",
-                    f.name,
-                    f.clone().builder_type.unwrap()
-                ));
+                output.push_str(&format!("\t\t\t\tp_{}: PhantomData{{}},\n", f.name,));
             }
 
             for f in &stc.fields {
@@ -252,7 +248,7 @@ fn main() {
                 }
             }
 
-            output.push_str("\t\t}\n}\n\n");
+            output.push_str("\t\t}\n\t}\n}\n\n");
         }
     }
 
@@ -268,8 +264,8 @@ fn main() {
                 tm.name, tm.field_type
             ));
 
-            regardless.push_str(&format!("\t\tself.{}", tm.name));
-            regardless.push_str("\n\t}\n}\n\n");
+            regardless.push_str(&format!("\t\tself.{}\n", tm.name));
+            regardless.push_str("\t}\n\n");
         }
     }
 
@@ -294,11 +290,7 @@ fn main() {
 
             // phantom types
             for f in stc.fields.iter().filter(|f| !f.optional) {
-                regardless.push_str(&format!(
-                    "\t\t\t\tp_{}: PhantomData<{}>,\n",
-                    f.name,
-                    f.clone().builder_type.unwrap()
-                ));
+                regardless.push_str(&format!("\t\t\t\tp_{}: PhantomData{{}},\n", f.name,));
             }
 
             for f in &stc.fields {
@@ -309,7 +301,7 @@ fn main() {
                 }
             }
 
-            regardless.push_str("\t\t}\n}\n\n");
+            regardless.push_str("\t\t}\n\t}\n\n");
         }
     }
 
@@ -317,7 +309,7 @@ fn main() {
     {
         output.push_str("// methods callable regardless\n");
         output.push_str(&format!(
-            "impl{} for {}{}\n{{\n",
+            "impl{} {}{}\n",
             calculate_type_description(&stc, &[], false),
             stc.name,
             calculate_type_description(&stc, &[], false)
@@ -326,7 +318,7 @@ fn main() {
         output.push_str("}\n");
     }
 
-    println!("{:?}", stc);
+    //println!("{:?}", stc);
     println!("\n{}", output);
 }
 
