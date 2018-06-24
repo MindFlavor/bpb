@@ -186,10 +186,13 @@ fn main() {
 
             output.push_str(&format!("{}\n{{\n", calculate_where(&stc, &bt[..])));
 
-            output.push_str(&format!(
-                "\tfn {}(&self) -> {} {{\n",
-                tm.name, tm.field_type
-            ));
+            output.push_str(&format!("\tfn {}(&self) -> ", tm.name));
+
+            if tm.optional {
+                output.push_str(&format!("Option<{}> {{\n", tm.field_type));
+            } else {
+                output.push_str(&format!("{} {{\n", tm.field_type));
+            }
 
             output.push_str(&format!("\t\tself.{}", tm.name));
             if !tm.optional && tm.initializer.is_none() {
@@ -237,15 +240,16 @@ fn main() {
 
             // phantom types
             for f in stc.fields.iter().filter(|f| !f.optional) {
-                output.push_str(&format!(
-                    "\t\t\t\tp_{}: PhantomData{{}},\n",
-                    f.name,
-                ));
+                output.push_str(&format!("\t\t\t\tp_{}: PhantomData{{}},\n", f.name,));
             }
 
             for f in &stc.fields {
                 if f.name == tm.name {
-                    output.push_str(&format!("\t\t\t\t{},\n", f.name));
+                    if tm.initializer.is_some() {
+                        output.push_str(&format!("\t\t\t\t{},\n", f.name));
+                    } else {
+                        output.push_str(&format!("\t\t\t\t{}: Some({}),\n", f.name, f.name));
+                    }
                 } else {
                     output.push_str(&format!("\t\t\t\t{}: self.{},\n", f.name, f.name));
                 }
@@ -293,10 +297,7 @@ fn main() {
 
             // phantom types
             for f in stc.fields.iter().filter(|f| !f.optional) {
-                regardless.push_str(&format!(
-                    "\t\t\t\tp_{}: PhantomData{{}},\n",
-                    f.name,
-                ));
+                regardless.push_str(&format!("\t\t\t\tp_{}: PhantomData{{}},\n", f.name,));
             }
 
             for f in &stc.fields {
@@ -332,11 +333,6 @@ fn main() {
 }
 
 fn calculate_type(f: &Field) -> String {
-    if !f.optional {
-        return f.field_type.to_owned();
-    }
-
-    // not optional
     match f.initializer {
         Some(_) => f.field_type.to_owned(),
         None => format!("Option<{}>", f.field_type),
