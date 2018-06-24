@@ -237,7 +237,10 @@ fn main() {
 
             // phantom types
             for f in stc.fields.iter().filter(|f| !f.optional) {
-                output.push_str(&format!("\t\t\t\tp_{}: PhantomData{{}},\n", f.name,));
+                output.push_str(&format!(
+                    "\t\t\t\tp_{}: PhantomData{{}},\n",
+                    f.name,
+                ));
             }
 
             for f in &stc.fields {
@@ -290,7 +293,10 @@ fn main() {
 
             // phantom types
             for f in stc.fields.iter().filter(|f| !f.optional) {
-                regardless.push_str(&format!("\t\t\t\tp_{}: PhantomData{{}},\n", f.name,));
+                regardless.push_str(&format!(
+                    "\t\t\t\tp_{}: PhantomData{{}},\n",
+                    f.name,
+                ));
             }
 
             for f in &stc.fields {
@@ -314,7 +320,10 @@ fn main() {
             stc.name,
             calculate_type_description(&stc, &[], false)
         ));
-        output.push_str(&format!("{}\n", &regardless));
+
+        output.push_str(&format!("{}\n", calculate_where(&stc, &[])));
+
+        output.push_str(&format!("{{\n{}\n", &regardless));
         output.push_str("}\n");
     }
 
