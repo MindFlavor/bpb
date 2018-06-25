@@ -121,7 +121,12 @@ fn main() {
         }
 
         for f in stc.fields.iter().filter(|f| f.optional) {
-            output.push_str(&format!("\t\t\t{}: None,\n", f.name));
+            match f.initializer {
+                Some(ref initializer) => {
+                    output.push_str(&format!("\t\t\t{}: {},\n", f.name, initializer))
+                }
+                None => output.push_str(&format!("\t\t\t{}: None,\n", f.name)),
+            };
         }
 
         output.push_str("\t\t}\n\t}\n}\n\n");
@@ -188,7 +193,7 @@ fn main() {
 
             output.push_str(&format!("\tfn {}(&self) -> ", tm.name));
 
-            if tm.optional {
+            if tm.optional && tm.initializer.is_none() {
                 output.push_str(&format!("Option<{}> {{\n", tm.field_type));
             } else {
                 output.push_str(&format!("{} {{\n", tm.field_type));
