@@ -29,6 +29,7 @@ pub struct ConstructorField {
 pub struct Struct {
     pub name: String,
     pub extra_types: Vec<String>,
+    pub extra_wheres: Vec<String>,
     pub constructor_fields: Vec<ConstructorField>,
     pub fields: Vec<Field>,
 }
@@ -92,10 +93,11 @@ fn main() {
     // create the ctor
     {
         output.push_str(&format!(
-            "impl{} {}{} {{\n",
+            "impl{} {}{} {} {{\n",
             calculate_type_description(&stc, &all_builder_types, false),
             stc.name,
-            calculate_type_description_all_no(&stc)
+            calculate_type_description_all_no(&stc),
+            calculate_where(&stc, &all_builder_types)
         ));
 
         output.push_str(&format!(
@@ -447,6 +449,10 @@ fn calculate_where(stc: &Struct, builders_type_to_skip: &[String]) -> String {
             "\t{} : ToAssign,\n",
             f.clone().builder_type.unwrap()
         ));
+    }
+
+    for ew in stc.extra_wheres.iter() {
+        s.push_str(&format!("\t{},\n", ew));
     }
 
     if s.is_empty() {

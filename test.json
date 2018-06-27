@@ -1,6 +1,7 @@
 {
 	"name": "SaratogaBuilder",
-	"extra_types": [ "'a" ],
+	"extra_types": [ "'a", "P" ],
+	"extra_wheres": [ "P: IntoAzurePath" ],
 	"constructor_fields": [
 		{
 			"name": "client",
@@ -13,12 +14,12 @@
 	],
 	"fields": [
 		{
-			"name": "container_name",
-			"field_type": "String",
-			"builder_type": "ContainerNameSet",
+			"name": "blob_path",
+			"field_type": "P",
+			"builder_type": "BlobPathSet",
 			"optional": false,
-			"trait_get": "ContainerNameRequired",
-			"trait_set": "ContainerNameSupport"
+			"trait_get": "BlobPathRequired",
+			"trait_set": "BlobPathSupport"
 		},
 		{
 			"name": "client_request_id",
