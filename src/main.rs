@@ -28,10 +28,21 @@ pub struct ConstructorField {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Struct {
     pub name: String,
+    pub inline: Option<bool>,
     pub extra_types: Vec<String>,
     pub extra_wheres: Vec<String>,
     pub constructor_fields: Vec<ConstructorField>,
     pub fields: Vec<Field>,
+}
+
+impl Struct {
+    pub fn inline(&self) -> bool {
+        if let Some(i) = self.inline {
+            i
+        } else {
+            false
+        }
+    }
 }
 
 fn main() {
@@ -100,6 +111,10 @@ fn main() {
             calculate_where(&stc, &all_builder_types)
         ));
 
+        if stc.inline() {
+            output.push_str("#[inline]\n");
+        }
+
         output.push_str(&format!(
             "\t pub(crate) fn new({}) -> {}{} {{\n\t\t{} {{\n",
             calculate_constructor_parameters(&stc),
@@ -152,6 +167,10 @@ fn main() {
             ));
 
             output.push_str(&format!("{}{{\n", &calculate_where(&stc, &[])));
+
+            if stc.inline() {
+                output.push_str("#[inline]\n");
+            }
             output.push_str(&format!(
                 "\tfn {}(&self) -> {} {{\n\t\tself.{}\n\t}}\n\n",
                 ct.name, ct.field_type, ct.name
@@ -167,6 +186,9 @@ fn main() {
             .filter(|ct| ct.trait_get.is_none())
         {
             regardless.push_str(&format!("{}{{\n", &calculate_where(&stc, &[])));
+            if stc.inline() {
+                output.push_str("#[inline]\n");
+            }
             regardless.push_str(&format!(
                 "\tfn {}(&self) -> {} {{\n\t\tself.{}\n\t}}\n\n",
                 ct.name, ct.field_type, ct.name
@@ -193,6 +215,9 @@ fn main() {
 
             output.push_str(&format!("{}\n{{\n", calculate_where(&stc, &bt[..])));
 
+            if stc.inline() {
+                output.push_str("#[inline]\n");
+            }
             output.push_str(&format!("\tfn {}(&self) -> ", tm.name));
 
             if tm.optional && tm.initializer.is_none() {
@@ -233,6 +258,9 @@ fn main() {
                 calculate_type_description(&stc, &bt[..], true)
             ));
 
+            if stc.inline() {
+                output.push_str("#[inline]\n");
+            }
             output.push_str(&format!(
                 "\tfn with_{}(self, {}: {}) -> Self::O {{\n",
                 tm.name, tm.name, tm.field_type
@@ -273,6 +301,9 @@ fn main() {
             .iter()
             .filter(|tm| tm.optional && tm.trait_get.is_none())
         {
+            if stc.inline() {
+                output.push_str("#[inline]\n");
+            }
             regardless.push_str(&format!(
                 "\tpub fn {}(&self) -> Option<{}> {{\n",
                 tm.name, tm.field_type
@@ -290,6 +321,9 @@ fn main() {
             .iter()
             .filter(|tm| tm.optional && tm.trait_get.is_none())
         {
+            if stc.inline() {
+                output.push_str("#[inline]\n");
+            }
             regardless.push_str(&format!(
                 "\tfn with_{}(self, {}: {}) -> Self {{\n",
                 tm.name, tm.name, tm.field_type
