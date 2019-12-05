@@ -1,0 +1,45 @@
+{
+	"name": "PutBlockListBuilder",
+	"extra_types": [ "'a", "T" ],
+	"extra_wheres": ["T: Borrow<[u8]> + 'a"],
+	"inline": true,
+	"constructor_fields": [
+		{
+			"name": "client",
+			"field_type": "&'a Client",
+			"trait_get": "ClientRequired<'a>"
+		}
+	],
+	"fields": [
+		{
+			"name": "container_name",
+			"field_type": "&'a str",
+			"builder_type": "ContainerNameSet",
+			"optional": false,
+			"trait_get": "ContainerNameRequired<'a>",
+			"trait_set": "ContainerNameSupport<'a>"
+		},
+		{
+			"name": "block_list",
+			"field_type": "&'a BlockList<T>",
+			"builder_type": "BlockListSet",
+			"optional": false,
+			"trait_get": "BlockListRequired<'a, T>",
+			"trait_set": "BlockListSupport<'a, T>"
+		},
+		{
+			"name": "timeout",
+			"field_type": "u64",
+			"optional": true,
+			"trait_get": "TimeoutOption",
+			"trait_set": "TimeoutSupport"
+		},
+		{
+			"name": "client_request_id",
+			"field_type": "&'a str",
+			"optional": true,
+			"trait_get": "ClientRequestIdOption<'a>",
+			"trait_set": "ClientRequestIdSupport<'a>"
+		}
+	]
+}
