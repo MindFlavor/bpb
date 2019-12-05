@@ -302,7 +302,7 @@ fn main() {
             .filter(|tm| tm.optional && tm.trait_get.is_none())
         {
             if stc.inline() {
-                output.push_str("#[inline]\n");
+                regardless.push_str("#[inline]\n");
             }
             regardless.push_str(&format!(
                 "\tpub fn {}(&self) -> Option<{}> {{\n",
@@ -322,7 +322,7 @@ fn main() {
             .filter(|tm| tm.optional && tm.trait_get.is_none())
         {
             if stc.inline() {
-                output.push_str("#[inline]\n");
+                regardless.push_str("#[inline]\n");
             }
             regardless.push_str(&format!(
                 "\tfn with_{}(self, {}: {}) -> Self {{\n",
@@ -338,12 +338,12 @@ fn main() {
 
             // phantom types
             for f in stc.fields.iter().filter(|f| !f.optional) {
-                regardless.push_str(&format!("\t\t\t\tp_{}: PhantomData{{}},\n", f.name,));
+                regardless.push_str(&format!("\t\t\t\tp_{}: self.tp_{},\n", f.name, f.name));
             }
 
             for f in &stc.fields {
                 if f.name == tm.name {
-                    regardless.push_str(&format!("\t\t\t\t{},\n", f.name));
+                    regardless.push_str(&format!("\t\t\t\t{}: Some({}),\n", f.name, f.name));
                 } else {
                     regardless.push_str(&format!("\t\t\t\t{}: self.{},\n", f.name, f.name));
                 }
@@ -363,7 +363,7 @@ fn main() {
             calculate_type_description(&stc, &[], false)
         ));
 
-        output.push_str(&format!("{}\n", calculate_where(&stc, &[])));
+        //output.push_str(&format!("{}\n", calculate_where(&stc, &[])));
 
         output.push_str(&format!("{{\n{}\n", &regardless));
         output.push_str("}\n");
