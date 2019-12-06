@@ -28,6 +28,7 @@ pub struct ConstructorField {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Struct {
     pub name: String,
+    pub uses: Vec<String>,
     pub inline: Option<bool>,
     pub extra_types: Vec<String>,
     pub extra_wheres: Vec<String>,
@@ -62,14 +63,19 @@ fn main() {
         stc.fields
             .iter()
             .filter(|f| !f.optional)
-            .map(|bt| abt.push(bt.builder_type.clone().unwrap()))
-            .collect::<()>();
+            .for_each(|bt| abt.push(bt.builder_type.clone().unwrap()));
         abt
     };
 
     let mut output = String::new();
 
     let mut regardless = String::new();
+
+    // dump uses
+    stc.uses
+        .iter()
+        .for_each(|u| output.push_str(&format!("{};\n", u)));
+    output.push_str("\n");
 
     // create the struct
     {
@@ -363,7 +369,7 @@ fn main() {
             calculate_type_description(&stc, &[], false)
         ));
 
-        //output.push_str(&format!("{}\n", calculate_where(&stc, &[])));
+        output.push_str(&format!("{}\n", calculate_where(&stc, &[])));
 
         output.push_str(&format!("{{\n{}\n", &regardless));
         output.push_str("}\n");
