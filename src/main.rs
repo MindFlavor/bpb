@@ -72,10 +72,17 @@ fn main() {
     let mut regardless = String::new();
 
     // dump uses
-    stc.uses
-        .iter()
-        .for_each(|u| output.push_str(&format!("{};\n", u)));
-    output.push_str("\n");
+    if !stc.uses.is_empty() {
+        stc.uses.iter().for_each(|u| {
+            if u.chars().last().unwrap() == ';' {
+                output.push_str(&format!("{}\n", u))
+            } else {
+                output.push_str(&format!("{};\n", u))
+            }
+        });
+
+        output.push_str("\n");
+    }
 
     // create the struct
     {
