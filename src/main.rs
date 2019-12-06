@@ -36,6 +36,7 @@ pub struct Struct {
     pub fields: Vec<Field>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum YesNo {
     Yes,
     No,
@@ -262,13 +263,15 @@ fn main() {
             };
             let tg = tm.trait_set.clone().unwrap();
 
-            let full_type_desc = calculate_type_description(&stc, &vec![tg.clone()], None);
-
             output.push_str(&format!(
                 "impl{} {} for {}{}\n",
-                full_type_desc, tg, stc.name, full_type_desc
+                calculate_type_description(&stc, &bt[..], None),
+                tg,
+                stc.name,
+                calculate_type_description(&stc, &bt[..], Some(YesNo::No)),
             ));
-            output.push_str(&format!("{}\n{{\n", calculate_where(&stc, &[])));
+
+            output.push_str(&format!("{}\n{{\n", calculate_where(&stc, &bt[..])));
 
             output.push_str(&format!(
                 "\ttype O = {}{};\n\n",
@@ -478,12 +481,15 @@ fn calculate_type_description(
     for f in stc.fields.iter().filter(|f| f.optional == false) {
         let bt = f.builder_type.clone().unwrap();
         if builders_type_to_skip.contains(&bt) {
-            if replace_with.is_some() {
+            if let Some(yes_no) = replace_with {
                 if !f_first {
                     s.push_str(", ");
                 }
 
-                s.push_str("Yes");
+                match yes_no {
+                    YesNo::Yes => s.push_str("Yes"),
+                    YesNo::No => s.push_str("No"),
+                }
                 f_first = false;
             }
         } else {
