@@ -120,7 +120,7 @@ fn main() {
             "impl{} {}{} {} {{\n",
             calculate_type_description(&stc, &all_builder_types, false),
             stc.name,
-            calculate_type_description_all_no(&stc),
+            calculate_type_description_all_yes_or_no(&stc, false),
             calculate_where(&stc, &all_builder_types)
         ));
 
@@ -132,7 +132,7 @@ fn main() {
             "\t pub(crate) fn new({}) -> {}{} {{\n\t\t{} {{\n",
             calculate_constructor_parameters(&stc),
             stc.name,
-            calculate_type_description_all_no(&stc),
+            calculate_type_description_all_yes_or_no(&stc, false),
             stc.name
         ));
 
@@ -382,6 +382,22 @@ fn main() {
         output.push_str("}\n");
     }
 
+    // print final
+    {
+        output.push_str("// methods callable only when every mandatory field has been filled\n");
+        output.push_str(&format!(
+            "\nimpl{} {}{}\n",
+            calculate_type_description(&stc, &all_builder_types, false),
+            stc.name,
+            calculate_type_description_all_yes_or_no(&stc, true),
+        ));
+
+        output.push_str(&format!("{}\n", calculate_where(&stc, &all_builder_types)));
+
+        output.push_str(&format!("{{\n{}\n", &regardless));
+        output.push_str("}\n");
+    }
+
     //println!("{:?}", stc);
     println!("\n{}", output);
 }
@@ -407,7 +423,7 @@ fn calculate_constructor_parameters(stc: &Struct) -> String {
     s
 }
 
-fn calculate_type_description_all_no(stc: &Struct) -> String {
+fn calculate_type_description_all_yes_or_no(stc: &Struct, is_yes: bool) -> String {
     let mut s = String::new();
 
     let mut f_first = true;
@@ -422,7 +438,11 @@ fn calculate_type_description_all_no(stc: &Struct) -> String {
 
     for _ in stc.fields.iter().filter(|f| f.optional == false) {
         if !f_first {
-            s.push_str(", No");
+            if is_yes {
+                s.push_str(", Yes");
+            } else {
+                s.push_str(", No");
+            }
         }
 
         f_first = false;
