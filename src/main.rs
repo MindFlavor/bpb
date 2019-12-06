@@ -384,9 +384,9 @@ fn main() {
 
     // print final
     {
-        output.push_str("// methods callable only when every mandatory field has been filled\n");
+        output.push_str("\n// methods callable only when every mandatory field has been filled\n");
         output.push_str(&format!(
-            "\nimpl{} {}{}\n",
+            "impl{} {}{}\n",
             calculate_type_description(&stc, &all_builder_types, false),
             stc.name,
             calculate_type_description_all_yes_or_no(&stc, true),
