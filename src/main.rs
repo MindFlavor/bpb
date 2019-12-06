@@ -36,6 +36,11 @@ pub struct Struct {
     pub fields: Vec<Field>,
 }
 
+pub enum YesNo {
+    Yes,
+    No,
+}
+
 impl Struct {
     pub fn inline(&self) -> bool {
         if let Some(i) = self.inline {
@@ -89,7 +94,7 @@ fn main() {
         output.push_str(&format!(
             "pub struct {}{}\n{} {{\n",
             stc.name,
-            calculate_type_description(&stc, &[], false),
+            calculate_type_description(&stc, &[], None),
             calculate_where(&stc, &[])
         ));
 
@@ -118,9 +123,9 @@ fn main() {
     {
         output.push_str(&format!(
             "impl{} {}{} {} {{\n",
-            calculate_type_description(&stc, &all_builder_types, false),
+            calculate_type_description(&stc, &all_builder_types, None),
             stc.name,
-            calculate_type_description_all_yes_or_no(&stc, false),
+            calculate_type_description_all(&stc, YesNo::No),
             calculate_where(&stc, &all_builder_types)
         ));
 
@@ -132,7 +137,7 @@ fn main() {
             "\t pub(crate) fn new({}) -> {}{} {{\n\t\t{} {{\n",
             calculate_constructor_parameters(&stc),
             stc.name,
-            calculate_type_description_all_yes_or_no(&stc, false),
+            calculate_type_description_all(&stc, YesNo::No),
             stc.name
         ));
 
@@ -173,10 +178,10 @@ fn main() {
             let t = ct.trait_get.clone().unwrap();
             output.push_str(&format!(
                 "impl{} {} for {}{}\n",
-                calculate_type_description(&stc, &[], false),
+                calculate_type_description(&stc, &[], None),
                 t,
                 stc.name,
-                calculate_type_description(&stc, &[], false),
+                calculate_type_description(&stc, &[], None),
             ));
 
             output.push_str(&format!("{}{{\n", &calculate_where(&stc, &[])));
@@ -220,10 +225,10 @@ fn main() {
 
             output.push_str(&format!(
                 "impl{} {} for {}{}\n",
-                calculate_type_description(&stc, &bt[..], false),
+                calculate_type_description(&stc, &bt[..], None),
                 tg,
                 stc.name,
-                calculate_type_description(&stc, &bt[..], true),
+                calculate_type_description(&stc, &bt[..], Some(YesNo::Yes)),
             ));
 
             output.push_str(&format!("{}\n{{\n", calculate_where(&stc, &bt[..])));
@@ -257,7 +262,7 @@ fn main() {
             };
             let tg = tm.trait_set.clone().unwrap();
 
-            let full_type_desc = calculate_type_description(&stc, &[], false);
+            let full_type_desc = calculate_type_description(&stc, &vec![tg.clone()], None);
 
             output.push_str(&format!(
                 "impl{} {} for {}{}\n",
@@ -268,7 +273,7 @@ fn main() {
             output.push_str(&format!(
                 "\ttype O = {}{};\n\n",
                 stc.name,
-                calculate_type_description(&stc, &bt[..], true)
+                calculate_type_description(&stc, &bt[..], Some(YesNo::Yes))
             ));
 
             if stc.inline() {
@@ -371,9 +376,9 @@ fn main() {
         output.push_str("// methods callable regardless\n");
         output.push_str(&format!(
             "impl{} {}{}\n",
-            calculate_type_description(&stc, &[], false),
+            calculate_type_description(&stc, &[], None),
             stc.name,
-            calculate_type_description(&stc, &[], false)
+            calculate_type_description(&stc, &[], None)
         ));
 
         output.push_str(&format!("{}\n", calculate_where(&stc, &[])));
@@ -387,9 +392,9 @@ fn main() {
         output.push_str("\n// methods callable only when every mandatory field has been filled\n");
         output.push_str(&format!(
             "impl{} {}{}\n",
-            calculate_type_description(&stc, &all_builder_types, false),
+            calculate_type_description(&stc, &all_builder_types, None),
             stc.name,
-            calculate_type_description_all_yes_or_no(&stc, true),
+            calculate_type_description_all(&stc, YesNo::Yes),
         ));
 
         output.push_str(&format!("{}\n", calculate_where(&stc, &all_builder_types)));
@@ -398,7 +403,6 @@ fn main() {
         output.push_str("}\n");
     }
 
-    //println!("{:?}", stc);
     println!("\n{}", output);
 }
 
@@ -423,7 +427,7 @@ fn calculate_constructor_parameters(stc: &Struct) -> String {
     s
 }
 
-fn calculate_type_description_all_yes_or_no(stc: &Struct, is_yes: bool) -> String {
+fn calculate_type_description_all(stc: &Struct, yes_no: YesNo) -> String {
     let mut s = String::new();
 
     let mut f_first = true;
@@ -438,10 +442,9 @@ fn calculate_type_description_all_yes_or_no(stc: &Struct, is_yes: bool) -> Strin
 
     for _ in stc.fields.iter().filter(|f| f.optional == false) {
         if !f_first {
-            if is_yes {
-                s.push_str(", Yes");
-            } else {
-                s.push_str(", No");
+            match yes_no {
+                YesNo::Yes => s.push_str(", Yes"),
+                YesNo::No => s.push_str(", No"),
             }
         }
 
@@ -458,7 +461,7 @@ fn calculate_type_description_all_yes_or_no(stc: &Struct, is_yes: bool) -> Strin
 fn calculate_type_description(
     stc: &Struct,
     builders_type_to_skip: &[String],
-    f_replace_with_yes: bool,
+    replace_with: Option<YesNo>,
 ) -> String {
     let mut s = String::new();
 
@@ -475,7 +478,7 @@ fn calculate_type_description(
     for f in stc.fields.iter().filter(|f| f.optional == false) {
         let bt = f.builder_type.clone().unwrap();
         if builders_type_to_skip.contains(&bt) {
-            if f_replace_with_yes {
+            if replace_with.is_some() {
                 if !f_first {
                     s.push_str(", ");
                 }
