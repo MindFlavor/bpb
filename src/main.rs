@@ -28,6 +28,7 @@ pub struct ConstructorField {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Struct {
     pub name: String,
+    pub derive: Option<String>,
     pub uses: Vec<String>,
     pub inline: Option<bool>,
     pub extra_types: Vec<String>,
@@ -88,6 +89,11 @@ fn main() {
         });
 
         output.push_str("\n");
+    }
+
+    // dump derives, if any
+    if let Some(ref derive) = stc.derive {
+        output.push_str(&format!("#[derive({})]\n", derive));
     }
 
     // create the struct
