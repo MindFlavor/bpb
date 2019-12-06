@@ -81,9 +81,9 @@ fn main() {
     if !stc.uses.is_empty() {
         stc.uses.iter().for_each(|u| {
             if u.chars().last().unwrap() == ';' {
-                output.push_str(&format!("{}\n", u))
+                output.push_str(&format!("use {}\n", u))
             } else {
-                output.push_str(&format!("{};\n", u))
+                output.push_str(&format!("use {};\n", u))
             }
         });
 
