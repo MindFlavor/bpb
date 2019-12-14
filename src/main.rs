@@ -221,6 +221,112 @@ fn main() {
         }
     }
 
+    // get mandatory no traits methods
+    {
+        output.push_str("\n//get mandatory no traits methods\n");
+        for tm in stc
+            .fields
+            .iter()
+            .filter(|tm| tm.trait_get.is_none() && tm.optional == false)
+        {
+            let bt = match tm.clone().builder_type {
+                Some(bt) => vec![bt],
+                None => Vec::new(),
+            };
+
+            output.push_str(&format!(
+                "impl{} {}{}\n",
+                calculate_type_description(&stc, &bt[..], None),
+                stc.name,
+                calculate_type_description(&stc, &bt[..], Some(YesNo::Yes)),
+            ));
+
+            output.push_str(&format!("{}\n{{\n", calculate_where(&stc, &bt[..])));
+
+            if stc.inline() {
+                output.push_str("#[inline]\n");
+            }
+            output.push_str(&format!("\tfn {}(&self) -> ", tm.name));
+
+            if tm.optional && tm.initializer.is_none() {
+                output.push_str(&format!("Option<{}> {{\n", tm.field_type));
+            } else {
+                output.push_str(&format!("{} {{\n", tm.field_type));
+            }
+
+            output.push_str(&format!("\t\tself.{}", tm.name));
+            if !tm.optional && tm.initializer.is_none() {
+                output.push_str(".unwrap()\n\t}\n}\n\n");
+            } else {
+                output.push_str("\n\t}\n}\n\n");
+            }
+        }
+    }
+
+    // set mandatory no trait methods
+    output.push_str("\n//set mandatory no traits methods\n");
+    {
+        for tm in stc
+            .fields
+            .iter()
+            .filter(|tm| tm.trait_get.is_none() && tm.optional == false)
+        {
+            let bt = match tm.clone().builder_type {
+                Some(bt) => vec![bt],
+                None => Vec::new(),
+            };
+
+            output.push_str(&format!(
+                "impl{} {}{}\n",
+                calculate_type_description(&stc, &bt[..], None),
+                stc.name,
+                calculate_type_description(&stc, &bt[..], Some(YesNo::No)),
+            ));
+
+            output.push_str(&format!("{}\n{{\n", calculate_where(&stc, &bt[..])));
+
+            output.push_str(&format!(
+                "\ttype O = {}{};\n\n",
+                stc.name,
+                calculate_type_description(&stc, &bt[..], Some(YesNo::Yes))
+            ));
+
+            if stc.inline() {
+                output.push_str("#[inline]\n");
+            }
+            output.push_str(&format!(
+                "\tfn with_{}(self, {}: {}) -> Self::O {{\n",
+                tm.name, tm.name, tm.field_type
+            ));
+
+            output.push_str(&format!("\t\t{} {{\n", stc.name));
+
+            // constructor types
+            for t in stc.constructor_fields.iter() {
+                output.push_str(&format!("\t\t\t\t{}: self.{},\n", t.name, t.name));
+            }
+
+            // phantom types
+            for f in stc.fields.iter().filter(|f| !f.optional) {
+                output.push_str(&format!("\t\t\t\tp_{}: PhantomData{{}},\n", f.name,));
+            }
+
+            for f in &stc.fields {
+                if f.name == tm.name {
+                    if tm.initializer.is_some() {
+                        output.push_str(&format!("\t\t\t\t{},\n", f.name));
+                    } else {
+                        output.push_str(&format!("\t\t\t\t{}: Some({}),\n", f.name, f.name));
+                    }
+                } else {
+                    output.push_str(&format!("\t\t\t\t{}: self.{},\n", f.name, f.name));
+                }
+            }
+
+            output.push_str("\t\t}\n\t}\n}\n\n");
+        }
+    }
+
     // get traits methods
     {
         for tm in stc.fields.iter().filter(|tm| tm.trait_get.is_some()) {
