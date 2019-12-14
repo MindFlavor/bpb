@@ -285,18 +285,18 @@ fn main() {
 
             output.push_str(&format!("{}\n{{\n", calculate_where(&stc, &bt[..])));
 
-            output.push_str(&format!(
-                "\ttype O = {}{};\n\n",
+            let return_type = format!(
+                "{}{}",
                 stc.name,
                 calculate_type_description(&stc, &bt[..], Some(YesNo::Yes))
-            ));
+            );
 
             if stc.inline() {
                 output.push_str("#[inline]\n");
             }
             output.push_str(&format!(
-                "\tfn with_{}(self, {}: {}) -> Self::O {{\n",
-                tm.name, tm.name, tm.field_type
+                "\tfn with_{}(self, {}: {}) -> {} {{\n",
+                tm.name, tm.name, tm.field_type, return_type
             ));
 
             output.push_str(&format!("\t\t{} {{\n", stc.name));
