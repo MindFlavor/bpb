@@ -210,7 +210,9 @@ fn main() {
             .iter()
             .filter(|ct| ct.trait_get.is_none())
         {
-            regardless.push_str(&format!("{}{{\n", &calculate_where(&stc, &[])));
+            //println!("\n\nct ==> {:?}", ct);
+            //println!("regardless  ==> {}", regardless);
+            //regardless.push_str(&format!("{}{{\n", &calculate_where(&stc, &[])));
             if stc.inline() {
                 output.push_str("#[inline]\n");
             }
@@ -218,6 +220,7 @@ fn main() {
                 "\tfn {}(&self) -> {} {{\n\t\tself.{}\n\t}}\n\n",
                 ct.name, ct.field_type, ct.name
             ));
+            //println!("regardless  ==> {}", regardless);
         }
     }
 
@@ -514,7 +517,8 @@ fn main() {
 
         output.push_str(&format!("{}\n", calculate_where(&stc, &all_builder_types)));
 
-        output.push_str(&format!("{{\n{}\n", &regardless));
+        //output.push_str(&format!("{{\n{}\n", &regardless));
+        output.push_str("{\n");
         output.push_str("}\n");
     }
 

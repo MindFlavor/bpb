@@ -1,6 +1,6 @@
 [package]
 name = "bpb"
-version = "0.6.1"
+version = "0.7.0"
 authors = ["Francesco Cogno <francesco.cogno@outlook.com>"]
 
 [dependencies]
