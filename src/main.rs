@@ -16,6 +16,7 @@ pub struct Field {
     pub initializer: Option<String>,
     pub trait_get: Option<String>,
     pub trait_set: Option<String>,
+    pub get_via_clone: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -23,6 +24,7 @@ pub struct ConstructorField {
     pub name: String,
     pub field_type: String,
     pub trait_get: Option<String>,
+    pub get_via_clone: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -196,9 +198,20 @@ fn main() {
             if stc.inline() {
                 output.push_str("#[inline]\n");
             }
+
+            // get_via_clone handling
+            let get_via_clone = if let Some(get_via_clone) = ct.get_via_clone {
+                get_via_clone
+            } else {
+                false
+            };
+
             output.push_str(&format!(
-                "\tfn {}(&self) -> {} {{\n\t\tself.{}\n\t}}\n\n",
-                ct.name, ct.field_type, ct.name
+                "\tfn {}(&self) -> {} {{\n\t\tself.{}{}\n\t}}\n\n",
+                ct.name,
+                ct.field_type,
+                ct.name,
+                if get_via_clone { ".clone()" } else { "" }
             ));
 
             output.push_str("}\n\n");
@@ -210,6 +223,13 @@ fn main() {
             .iter()
             .filter(|ct| ct.trait_get.is_none())
         {
+            // get_via_clone handling
+            let get_via_clone = if let Some(get_via_clone) = ct.get_via_clone {
+                get_via_clone
+            } else {
+                false
+            };
+
             //println!("\n\nct ==> {:?}", ct);
             //println!("regardless  ==> {}", regardless);
             //regardless.push_str(&format!("{}{{\n", &calculate_where(&stc, &[])));
@@ -217,8 +237,11 @@ fn main() {
                 output.push_str("#[inline]\n");
             }
             regardless.push_str(&format!(
-                "\tfn {}(&self) -> {} {{\n\t\tself.{}\n\t}}\n\n",
-                ct.name, ct.field_type, ct.name
+                "\tfn {}(&self) -> {} {{\n\t\tself.{}{}\n\t}}\n\n",
+                ct.name,
+                ct.field_type,
+                ct.name,
+                if get_via_clone { ".clone()" } else { "" }
             ));
             //println!("regardless  ==> {}", regardless);
         }
@@ -235,6 +258,13 @@ fn main() {
             let bt = match tm.clone().builder_type {
                 Some(bt) => vec![bt],
                 None => Vec::new(),
+            };
+
+            // get_via_clone handling
+            let get_via_clone = if let Some(get_via_clone) = tm.get_via_clone {
+                get_via_clone
+            } else {
+                false
             };
 
             output.push_str(&format!(
@@ -257,7 +287,11 @@ fn main() {
                 output.push_str(&format!("{} {{\n", tm.field_type));
             }
 
-            output.push_str(&format!("\t\tself.{}", tm.name));
+            output.push_str(&format!(
+                "\t\tself.{}{}",
+                tm.name,
+                if get_via_clone { ".clone()" } else { "" }
+            ));
             if !tm.optional && tm.initializer.is_none() {
                 output.push_str(".unwrap()\n\t}\n}\n\n");
             } else {
@@ -339,6 +373,13 @@ fn main() {
             };
             let tg = tm.trait_get.clone().unwrap();
 
+            // get_via_clone handling
+            let get_via_clone = if let Some(get_via_clone) = tm.get_via_clone {
+                get_via_clone
+            } else {
+                false
+            };
+
             output.push_str(&format!(
                 "impl{} {} for {}{}\n",
                 calculate_type_description(&stc, &bt[..], None),
@@ -360,7 +401,11 @@ fn main() {
                 output.push_str(&format!("{} {{\n", tm.field_type));
             }
 
-            output.push_str(&format!("\t\tself.{}", tm.name));
+            output.push_str(&format!(
+                "\t\tself.{}{}",
+                tm.name,
+                if get_via_clone { ".clone()" } else { "" }
+            ));
             if !tm.optional && tm.initializer.is_none() {
                 output.push_str(".unwrap()\n\t}\n}\n\n");
             } else {
@@ -437,6 +482,13 @@ fn main() {
             .iter()
             .filter(|tm| tm.optional && tm.trait_get.is_none())
         {
+            // get_via_clone handling
+            let get_via_clone = if let Some(get_via_clone) = tm.get_via_clone {
+                get_via_clone
+            } else {
+                false
+            };
+
             if stc.inline() {
                 regardless.push_str("#[inline]\n");
             }
@@ -445,7 +497,11 @@ fn main() {
                 tm.name, tm.field_type
             ));
 
-            regardless.push_str(&format!("\t\tself.{}\n", tm.name));
+            regardless.push_str(&format!(
+                "\t\tself.{}{}\n",
+                tm.name,
+                if get_via_clone { ".clone()" } else { "" }
+            ));
             regardless.push_str("\t}\n\n");
         }
     }
