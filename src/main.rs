@@ -35,6 +35,7 @@ pub struct Struct {
     pub inline: Option<bool>,
     pub extra_types: Vec<String>,
     pub extra_wheres: Vec<String>,
+    pub prepend_required_types: Option<bool>,
     pub constructor_fields: Vec<ConstructorField>,
     pub fields: Vec<Field>,
 }
@@ -93,11 +94,24 @@ fn main() {
         output.push_str("\n");
     }
 
+    // prepend mandatory types if required
+    if let Some(prepend_required_types) = stc.prepend_required_types {
+        if prepend_required_types == true {
+            output.push_str("pub trait ToAssign {}");
+            output.push_str("#[derive(Debug,Clone,Copy)]");
+            output.push_str("pub struct Yes {}");
+            output.push_str("#[derive(Debug,Clone,Copy)]");
+            output.push_str("pub struct No {}");
+            output.push_str("impl ToAssign for Yes {}");
+            output.push_str("impl ToAssign for No {}");
+            output.push_str("\n");
+        }
+    }
+
     // dump derives, if any
     if let Some(ref derive) = stc.derive {
         output.push_str(&format!("#[derive({})]\n", derive));
     }
-
     // create the struct
     {
         output.push_str(&format!(
@@ -279,7 +293,7 @@ fn main() {
             if stc.inline() {
                 output.push_str("#[inline]\n");
             }
-            output.push_str(&format!("\tfn {}(&self) -> ", tm.name));
+            output.push_str(&format!("\tpub fn {}(&self) -> ", tm.name));
 
             if tm.optional && tm.initializer.is_none() {
                 output.push_str(&format!("Option<{}> {{\n", tm.field_type));
@@ -332,7 +346,7 @@ fn main() {
                 output.push_str("#[inline]\n");
             }
             output.push_str(&format!(
-                "\tfn with_{}(self, {}: {}) -> {} {{\n",
+                "\tpub fn with_{}(self, {}: {}) -> {} {{\n",
                 tm.name, tm.name, tm.field_type, return_type
             ));
 
@@ -530,7 +544,7 @@ fn main() {
 
             // phantom types
             for f in stc.fields.iter().filter(|f| !f.optional) {
-                regardless.push_str(&format!("\t\t\t\tp_{}: self.tp_{},\n", f.name, f.name));
+                regardless.push_str(&format!("\t\t\t\tp_{}: self.p_{},\n", f.name, f.name));
             }
 
             for f in &stc.fields {
